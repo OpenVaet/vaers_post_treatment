@@ -4336,3 +4336,183 @@ vaers_id;age;life_threatening;subject_died;disability;status;evidence
 0804553;0.5;no;no;no;ok;
 0804556;3;no;no;yes;ok;The patient experienced a serious autism (autism spectrum disorder) and developmental regression unknown latency following the administration of DIPHTHERIA and TETANUS AND ACELLULA
 0804655;2.17;no;no;no;ok;no
+0804658;8;no;no;no;ok;The text describes a medication error and states 'It was unknown whether the patient experienced any adverse event.' No life-threatening event, death, or disability is reported.
+0804797;1.5;no;no;no;ok;
+0804799;0.75;no;no;no;ok;
+0804800;11;no;no;no;ok;
+0804825;3;no;no;no;ok;
+0804826;13;no;no;no;ok;
+0804974;0.33;no;no;no;ok;No adverse effects reported.
+0805023;16;no;no;no;ok;
+0805104;14;no;no;no;ok;
+0805150;15;no;no;no;ok;
+0805361;1.5;no;no;no;ok;
+0805364;12.33;no;no;no;ok;The text only reports fever, vomiting and lethargy. No outcome details are provided.
+0805389;3;no;no;no;ok;
+0805390;17;no;no;no;ok;
+0805391;17;no;no;no;ok;
+0805546;10;no;no;no;ok;
+0805907;16;no;no;no;ok;
+0805928;12;no;no;no;ok;
+0806013;0.5;no;no;no;ok;
+0806089;1.5;no;no;no;ok;
+0806090;0.33;no;no;no;ok;
+0806093;8;no;no;no;ok;
+0806134;7;no;no;no;ok;
+0806135;11;no;no;no;ok;
+0806136;11;no;no;no;ok;
+0806139;11;no;no;no;ok;Initial information received on 11-Mar-2019 regarding an unsolicited valid non-serious case received from Other health care professional.
+0806143;0.5;no;no;no;ok;
+0806160;0.5;no;no;no;ok;
+0806161;1.5;no;no;no;ok;
+0806199;0.8;no;no;no;ok;
+0806275;16;no;no;no;ok;
+0806299;18;no;no;no;ok;
+0806306;0.17;no;no;no;ok;
+0806309;7;no;no;no;ok;
+0806312;11;no;no;no;ok;The text states it was 'unknown if any adverse event was occurred.' and does not describe any serious or life-threatening outcomes.
+0806313;16;no;no;no;ok;
+0806403;1;no;no;no;ok;
+0806472;16;no;no;no;ok;
+0806526;16;yes;no;no;ok;The events were considered life threatening.
+0806577;9;no;no;no;ok;
+0806580;16;no;no;no;ok;
+0806602;0.17;no;no;no;ok;
+0806603;16;yes;no;no;ok;
+0806754;4;no;no;no;ok;
+0806755;4.5;no;no;no;ok;
+0807042;17;no;no;no;ok;
+0807250;0.33;no;no;no;ok;
+0807311;16;no;no;no;ok;
+0807327;1.5;no;no;no;ok;
+0807373;9;no;no;no;ok;
+0807378;1.5;no;no;no;ok;
+0807484;6;no;no;no;ok;
+0807490;5;no;no;no;ok;
+0807508;16;no;no;no;ok;
+0807539;15;no;no;no;ok;
+0807602;2;no;no;no;ok;
+0807613;13;no;no;no;ok;The event was considered non-serious.
+0807624;6;no;no;no;ok;
+0807713;13;no;no;no;ok;
+0807744;1;no;no;no;ok;
+0807753;11;no;no;no;ok;
+0807867;0.33;no;no;no;ok;
+0807869;17;no;no;no;ok;The patient was reported as 'healthy (recovered)' at the time of reporting.
+0807875;12;no;no;no;ok;
+0807888;0;no;no;yes;ok;
+0807889;0.2;no;no;no;ok;
+0807890;0.5;no;no;no;ok;
+0807892;1.5;no;no;no;ok;
+0807947;0.33;no;no;no;ok;
+0807965;16;no;no;no;ok;Patient fell off the exam table and split his head open on the floor
+0808000;0.5;no;no;no;ok;
+0808001;13;no;no;no;ok;
+0808014;11;no;no;no;ok;
+0808017;3;no;no;no;ok;
+0808018;0.58;no;no;no;ok;The patient did not experience any adverse reaction after the injection.
+0808019;0.58;no;no;no;ok;
+0808022;2;no;no;no;ok;
+0808087;14;no;no;no;ok;
+0808244;1;no;no;no;ok;
+0808273;18;no;no;no;ok;
+0808365;4;no;no;no;ok;
+0808603;5;no;no;no;ok;
+0808620;0.2;no;no;no;ok;
+0808633;4;no;no;no;ok;localized swelling and erythema approximately 10x12 cm over left deltoid
+0808668;8;no;no;no;ok;The outcome of muscular weakness and tic was resolved.
+0808693;12;no;no;no;ok;
+0808860;9;no;no;no;ok;
+0808862;15;no;no;no;ok;
+0808911;0;no;no;no;ok;
+0809206;11;no;no;no;ok;
+0809248;0.5;no;no;no;ok;
+0809259;4;no;no;no;ok;
+0809261;4;no;no;no;ok;
+0809270;7;no;no;no;ok;
+0809354;0.33;no;no;no;ok;
+0809371;14;no;no;no;ok;No mention of life-threatening event, cardiac arrest, severe organ failure, or ICU admission for vital threat.
+0809410;10;no;no;no;ok;
+0809412;1.5;no;no;no;ok;No adverse effects reported.
+0809426;0;no;no;no;ok;
+0809557;0;no;no;no;ok;
+0809614;0.33;yes;no;no;ok;The consumer reported that her son's intestines fold in on itself and the patient almost died. [...] Upon internal review, the event of intussusception was considered to be medical
+0809857;13;no;no;no;ok;
+0809868;0.75;no;no;no;ok;
+0809869;12;no;no;no;ok;
+0809908;15.75;no;no;no;ok;
+0809909;17;no;no;no;ok;The patient outcome is reported as Recovering / Resolving for events ("the redness faded quite a bit and she could use her arm again). Final diagnosis was could not move her arm en
+0809917;11;no;no;no;ok;
+0809919;0.5;no;no;no;ok;
+0810020;0.83;no;no;no;ok;The patient developed a hard spot where the injection was placed on 02Apr2019. The outcome of the event was unknown.
+0810098;4;no;no;no;ok;
+0810099;4;no;no;no;ok;
+0810165;13;no;no;no;ok;
+0810272;15;no;no;no;ok;
+0810494;1;no;no;no;ok;subject_died: No mention of death. life_threatening: Encephalitis is described but not specifically as life-threatening (e.g., ICU/cardiac arrest/code blue). disability: No mention
+0810506;17;no;no;yes;ok;The reporter considered this to be a disabling event, since it was affecting the patient's mobility.
+0810522;16;no;no;no;ok;
+0810523;11;no;no;no;ok;
+0810716;8;no;no;no;ok;
+0810737;16;no;no;no;ok;
+0810746;0.33;no;no;no;ok;
+0810752;0.5;no;no;no;ok;no
+0810914;15;no;no;no;ok;No adverse effects were reported.
+0810950;14;no;no;no;ok;
+0810951;0.33;no;no;no;ok;No adverse event was reported.
+0810953;0;no;no;no;ok;
+0810954;0;no;no;no;ok;The outcome of the event large for gestational age was not reported.
+0810970;0.33;no;no;no;ok;
+0811024;1;no;no;no;ok;
+0811028;12;no;yes;no;ok;
+0811033;15;no;no;no;ok;
+0811092;17;no;no;no;ok;The patient experienced leg numbness for one hour and was able to walk at the time of report. The outcome of Guillain-Barre Syndrome was reported as recovered.
+0811198;0;no;no;no;ok;The patient had recovered from the event chylothorax and had not recovered from the event hypospadias.
+0811263;15;no;no;no;ok;
+0811399;17;no;no;no;ok;
+0811400;17;no;no;no;ok;
+0811405;12;no;no;no;ok;
+0811424;18;no;no;no;ok;
+0811426;17;no;no;no;ok;
+0811431;5;no;no;no;ok;expired Daptacel was administered, Initial information received on 22-Apr-2019 regarding an unsolicited valid non-serious case received from a nurse.
+0811493;16;yes;yes;no;ok;
+0811569;18;no;no;no;ok;
+0811594;11;no;no;no;ok;On that day, after GARDASIL 9 was administered, the patient fainted (syncope). It was reported that the patient sought medical attention and no treatment was given for the event. O
+0811596;0;no;no;yes;ok;
+0811623;1.5;no;no;no;ok;
+0811755;0.07;no;no;no;ok;
+0811835;0.5;no;no;no;ok;
+0811930;4;no;no;yes;ok;The outcome of movement disorder was reported as not recovered.
+0811953;0.08;no;no;no;ok;
+0811955;1.17;no;no;no;ok;rash up in leg, Initial information received on 23-Apr-2019 regarding an unsolicited valid non-serious case...
+0811956;0.25;no;no;no;ok;
+0812019;18;no;no;no;ok;
+0812022;4;no;no;no;ok;
+0812110;17;no;no;no;ok;
+0812114;16;no;no;no;ok;
+0812316;12;no;no;no;ok;
+0812340;0.5;no;no;no;ok;
+0812342;12;no;no;no;ok;
+0812343;0;no;no;no;ok;
+0812346;0.5;no;no;no;ok;
+0812348;10;no;no;no;ok;
+0812523;15;no;no;no;ok;N/A
+0812659;4;no;no;no;ok;
+0812699;0.33;no;no;no;ok;
+0812700;11;no;no;no;ok;
+0812701;0.17;no;no;no;ok;gave a 2mo male a DTaP/IPV diluent of Pentacel only today. She thought she was giving the HIB. ... No adverse event not reported.
+0812703;0.75;no;no;no;ok;
+0812707;1.5;no;no;no;ok;
+0812708;0.5;no;no;no;ok;no
+0812709;1.25;no;no;no;ok;
+0812710;15;no;no;no;ok;
+0812711;10;no;no;no;ok;
+0812934;4;no;yes;no;ok;
+0812943;1;no;no;no;ok;Injection site swelling, Injection site redness, Looks like induration as well,
+0813039;1.5;no;no;no;ok;
+0813045;3;no;no;no;ok;
+0813071;2;no;no;no;ok;
+0813121;4;no;no;no;ok;
+0813129;4;no;no;no;ok;
+0813133;4;no;no;no;ok;No adverse effects reported., patient was vaccinated with improperly stored dose of Varivax, [...] No adverse effects were reported.,
+0813134;12;no;no;no;ok;

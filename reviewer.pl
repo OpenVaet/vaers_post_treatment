@@ -29,6 +29,8 @@ my $PER_PAGE            = 50;
 my %archive   = ();
 my @ages      = ();   # array of hashrefs
 my %ages_idx  = ();   # vaers_id => index in @ages
+my @ages_found     = ();   # subset: only status=ok
+my %ages_found_idx = ();   # vaers_id => index in @ages_found
 my @outcomes  = ();
 my %outc_idx  = ();
 
@@ -74,6 +76,18 @@ sub load_ages_csv {
     }
     close $fh;
     app->log->info("  Ages rows: " . scalar(@ages));
+
+    # Build the "found" subset (status=ok only)
+    @ages_found     = ();
+    %ages_found_idx = ();
+    my $fi = 0;
+    for my $rec (@ages) {
+        next unless ($rec->{status} // '') eq 'ok';
+        push @ages_found, $rec;
+        $ages_found_idx{ $rec->{vaers_id} } = $fi;
+        $fi++;
+    }
+    app->log->info("  Ages found (status=ok): " . scalar(@ages_found));
 }
 
 sub load_outcomes_csv {
@@ -171,6 +185,32 @@ helper age_review_stats => sub ($c) {
     };
 };
 
+helper age_found_stats => sub ($c) {
+    my $total     = scalar @ages_found;
+    my $reviewed  = 0;
+    my $validated = 0;
+    my $corrected = 0;
+    my $rejected  = 0;
+    for my $rec (@ages_found) {
+        my $r = $age_reviews{ $rec->{vaers_id} };
+        next unless $r;
+        $reviewed++;
+        my $d = $r->{decision} // '';
+        $validated++ if $d eq 'validated';
+        $corrected++ if $d eq 'corrected';
+        $rejected++  if $d eq 'rejected';
+    }
+    return {
+        total     => $total,
+        reviewed  => $reviewed,
+        validated => $validated,
+        corrected => $corrected,
+        rejected  => $rejected,
+        pending   => $total - $reviewed,
+        pct       => $total > 0 ? sprintf("%.1f", $reviewed / $total * 100) : '0.0',
+    };
+};
+
 helper sev_review_stats => sub ($c) {
     my $total     = scalar @outcomes;
     my $reviewed  = scalar keys %sev_reviews;
@@ -229,8 +269,9 @@ load_reviews();
 # ---- Dashboard ----
 get '/' => sub ($c) {
     $c->stash(
-        age_stats => $c->age_review_stats,
-        sev_stats => $c->sev_review_stats,
+        age_stats       => $c->age_review_stats,
+        age_found_stats => $c->age_found_stats,
+        sev_stats       => $c->sev_review_stats,
     );
     $c->render(template => 'dashboard');
 };
@@ -273,10 +314,47 @@ get '/ages' => sub ($c) {
     $c->render(template => 'ages_list');
 };
 
+# ---- Ages found list (status=ok only) ----
+get '/ages/found' => sub ($c) {
+    my $filter = $c->param('filter') // 'all';    # all | pending | reviewed
+    my $page   = int($c->param('page') // 1);
+    $page = 1 if $page < 1;
+
+    my @filtered;
+    for my $rec (@ages_found) {
+        my $vid = $rec->{vaers_id};
+        my $is_reviewed = exists $age_reviews{$vid};
+        if ($filter eq 'pending') {
+            next if $is_reviewed;
+        } elsif ($filter eq 'reviewed') {
+            next unless $is_reviewed;
+        }
+        push @filtered, $rec;
+    }
+
+    my $total_filtered = scalar @filtered;
+    my $total_pages    = int(($total_filtered + $PER_PAGE - 1) / $PER_PAGE) || 1;
+    $page = $total_pages if $page > $total_pages;
+    my $offset = ($page - 1) * $PER_PAGE;
+    my @page_items = @filtered[$offset .. min($offset + $PER_PAGE - 1, $#filtered)];
+
+    $c->stash(
+        items       => \@page_items,
+        filter      => $filter,
+        page        => $page,
+        total_pages => $total_pages,
+        total_items => $total_filtered,
+        reviews     => \%age_reviews,
+        stats       => $c->age_found_stats,
+    );
+    $c->render(template => 'ages_found_list');
+};
+
 # ---- Age review (single record) ----
 get '/ages/review/:vaers_id' => sub ($c) {
-    my $vid = $c->param('vaers_id');
-    my $idx = $ages_idx{$vid};
+    my $vid  = $c->param('vaers_id');
+    my $from = $c->param('from') // 'all';   # 'found' or 'all'
+    my $idx  = $ages_idx{$vid};
     unless (defined $idx) {
         return $c->reply->not_found;
     }
@@ -285,30 +363,42 @@ get '/ages/review/:vaers_id' => sub ($c) {
     my $archive = $c->archive_record($vid);
     my $review  = $age_reviews{$vid};
 
-    # Find next unreviewed
+    # Pick the right pool for "next unreviewed"
+    my ($pool_ref, $pool_idx_ref) = ($from eq 'found')
+        ? (\@ages_found, \%ages_found_idx)
+        : (\@ages,       \%ages_idx);
+
+    my $pool_pos = $pool_idx_ref->{$vid};   # position in pool
     my $next_unreviewed = undef;
-    for my $i ($idx + 1 .. $#ages) {
-        unless (exists $age_reviews{ $ages[$i]->{vaers_id} }) {
-            $next_unreviewed = $ages[$i]->{vaers_id};
-            last;
-        }
-    }
-    # Wrap around
-    if (!$next_unreviewed) {
-        for my $i (0 .. $idx - 1) {
-            unless (exists $age_reviews{ $ages[$i]->{vaers_id} }) {
-                $next_unreviewed = $ages[$i]->{vaers_id};
+
+    if (defined $pool_pos) {
+        # Forward scan
+        for my $i ($pool_pos + 1 .. $#$pool_ref) {
+            unless (exists $age_reviews{ $pool_ref->[$i]->{vaers_id} }) {
+                $next_unreviewed = $pool_ref->[$i]->{vaers_id};
                 last;
             }
         }
+        # Wrap around
+        if (!$next_unreviewed) {
+            for my $i (0 .. $pool_pos - 1) {
+                unless (exists $age_reviews{ $pool_ref->[$i]->{vaers_id} }) {
+                    $next_unreviewed = $pool_ref->[$i]->{vaers_id};
+                    last;
+                }
+            }
+        }
     }
+
+    my $stats = ($from eq 'found') ? $c->age_found_stats : $c->age_review_stats;
 
     $c->stash(
         rec             => $rec,
         archive         => $archive,
         review          => $review,
         next_unreviewed => $next_unreviewed,
-        stats           => $c->age_review_stats,
+        stats           => $stats,
+        from            => $from,
     );
     $c->render(template => 'age_review');
 };
@@ -316,6 +406,7 @@ get '/ages/review/:vaers_id' => sub ($c) {
 # ---- Save age review ----
 post '/ages/review/:vaers_id' => sub ($c) {
     my $vid      = $c->param('vaers_id');
+    my $from     = $c->param('from') // 'all';
     my $decision = $c->param('decision') // '';
     my $corr_age = $c->param('corrected_age') // '';
     my $notes    = $c->param('notes') // '';
@@ -336,9 +427,10 @@ post '/ages/review/:vaers_id' => sub ($c) {
     # Redirect to next unreviewed or back to list
     my $next = $c->param('next_unreviewed') // '';
     if ($next && $next ne '' && exists $ages_idx{$next}) {
-        return $c->redirect_to("/ages/review/$next");
+        return $c->redirect_to("/ages/review/$next?from=$from");
     }
-    $c->redirect_to('/ages?filter=pending');
+    my $back = ($from eq 'found') ? '/ages/found?filter=pending' : '/ages?filter=pending';
+    $c->redirect_to($back);
 };
 
 # ---- Severity list ----
@@ -578,7 +670,8 @@ __DATA__
   <div class="container-fluid">
     <a class="navbar-brand fw-bold" href="/">VAERS Reviewer</a>
     <div class="navbar-nav flex-row gap-3">
-      <a class="nav-link <%= 'active' if (current_route() // '') =~ /^ages/ %>" href="/ages">Ages</a>
+      <a class="nav-link <%= 'active' if (current_route() // '') =~ /^ages_found/ %>" href="/ages/found">Ages Found</a>
+      <a class="nav-link <%= 'active' if (current_route() // '') =~ /^ages/ && (current_route() // '') !~ /found/ %>" href="/ages">Ages (all)</a>
       <a class="nav-link <%= 'active' if (current_route() // '') =~ /^sev/ %>" href="/severity">Severity</a>
       <a class="nav-link" href="/">Dashboard</a>
     </div>
@@ -600,11 +693,68 @@ __DATA__
 
 <h4 class="mb-4">Review Dashboard</h4>
 
+<!-- ============ Ages Found (status=ok) ============ -->
 <div class="row g-3 mb-4">
-
-  <!-- Age Review Stats -->
   <div class="col-12">
-    <h5>Age Extraction Review</h5>
+    <h5>Ages Found — Validation <small class="text-muted">(LLM recovered an age, status=ok)</small></h5>
+  </div>
+
+  <div class="col-md-2">
+    <div class="stat-card text-center">
+      <h6>Total found</h6>
+      <div class="big"><%= $age_found_stats->{total} %></div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="stat-card text-center">
+      <h6>Reviewed</h6>
+      <div class="big text-primary"><%= $age_found_stats->{reviewed} %></div>
+      <small class="text-muted"><%= $age_found_stats->{pct} %>%</small>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="stat-card text-center">
+      <h6>Validated</h6>
+      <div class="big text-success"><%= $age_found_stats->{validated} %></div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="stat-card text-center">
+      <h6>Corrected</h6>
+      <div class="big text-info"><%= $age_found_stats->{corrected} %></div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="stat-card text-center">
+      <h6>Rejected</h6>
+      <div class="big text-danger"><%= $age_found_stats->{rejected} %></div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="stat-card text-center">
+      <h6>Pending</h6>
+      <div class="big text-warning"><%= $age_found_stats->{pending} %></div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="progress progress-ring">
+      <div class="progress-bar bg-success" style="width: <%= $age_found_stats->{pct} %>%"></div>
+    </div>
+  </div>
+
+  <div class="col-12 mt-2">
+    <a href="/ages/found?filter=pending" class="btn btn-primary btn-sm me-2">Review pending found ages</a>
+    <a href="/api/export/ages" class="btn btn-outline-secondary btn-sm">Export age reviews CSV</a>
+  </div>
+</div>
+
+<hr>
+
+<!-- ============ Ages Overall ============ -->
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <h5>Ages — Full Overview <small class="text-muted">(all statuses: ok / ambiguous / missing / error)</small></h5>
   </div>
 
   <div class="col-md-2">
@@ -652,8 +802,7 @@ __DATA__
   </div>
 
   <div class="col-12 mt-2">
-    <a href="/ages?filter=pending" class="btn btn-primary btn-sm me-2">Review pending ages</a>
-    <a href="/api/export/ages" class="btn btn-outline-secondary btn-sm">Export age reviews CSV</a>
+    <a href="/ages?filter=pending" class="btn btn-outline-primary btn-sm me-2">Review all pending ages</a>
   </div>
 </div>
 
@@ -790,7 +939,7 @@ __DATA__
           % }
         </td>
         <td>
-          <a href="/ages/review/<%= $vid %>" class="btn btn-sm btn-outline-primary">Review</a>
+          <a href="/ages/review/<%= $vid %>?from=all" class="btn btn-sm btn-outline-primary">Review</a>
         </td>
       </tr>
     % }
@@ -811,18 +960,102 @@ __DATA__
 % }
 
 
+@@ ages_found_list.html.ep
+% layout 'default';
+% title 'Ages Found — Review';
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Ages Found — Validation <small class="text-muted">(status=ok only)</small></h4>
+  <div>
+    <span class="badge bg-success"><%= $stats->{reviewed} %> / <%= $stats->{total} %> reviewed (<%= $stats->{pct} %>%)</span>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-bar mb-3">
+  % my @filters = (
+  %   ['all',      'All found'],
+  %   ['pending',  'Pending'],
+  %   ['reviewed', 'Reviewed'],
+  % );
+  % for my $f (@filters) {
+    <a href="/ages/found?filter=<%= $f->[0] %>"
+       class="btn btn-sm <%= $filter eq $f->[0] ? 'btn-dark' : 'btn-outline-secondary' %>"><%= $f->[1] %></a>
+  % }
+  <span class="ms-3 text-muted small"><%= $total_items %> records</span>
+</div>
+
+<table class="table table-sm table-hover bg-white">
+  <thead class="table-light">
+    <tr>
+      <th>VAERS ID</th>
+      <th>Year</th>
+      <th>Extracted age</th>
+      <th>Evidence</th>
+      <th>Review</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    % for my $item (@$items) {
+      % my $vid = $item->{vaers_id};
+      % my $rv  = $reviews->{$vid};
+      % my $ar  = archive_record($vid);
+      <tr>
+        <td><strong><%= $vid %></strong></td>
+        <td><%= $ar->{file_year} // '?' %></td>
+        <td><strong><%= $item->{age} %></strong></td>
+        <td class="text-muted" style="max-width:350px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+          <%= $item->{evidence} %>
+        </td>
+        <td>
+          % if ($rv) {
+            % my $d = $rv->{decision} // '';
+            <span class="badge badge-<%= $d %>"><%= $d %></span>
+            % if ($d eq 'corrected' && defined $rv->{corrected_age}) {
+              <small class="text-info ms-1">→ <%= $rv->{corrected_age} %></small>
+            % }
+          % } else {
+            <span class="badge badge-pending">pending</span>
+          % }
+        </td>
+        <td>
+          <a href="/ages/review/<%= $vid %>?from=found" class="btn btn-sm btn-outline-primary">Review</a>
+        </td>
+      </tr>
+    % }
+  </tbody>
+</table>
+
+<!-- Pagination -->
+% if ($total_pages > 1) {
+  <nav>
+    <ul class="pagination pagination-sm justify-content-center">
+      % for my $p (1 .. $total_pages) {
+        <li class="page-item <%= $p == $page ? 'active' : '' %>">
+          <a class="page-link" href="/ages/found?filter=<%= $filter %>&page=<%= $p %>"><%= $p %></a>
+        </li>
+      % }
+    </ul>
+  </nav>
+% }
+
+
 @@ age_review.html.ep
 % layout 'default';
 % title "Age Review — $rec->{vaers_id}";
+% my $back_url = ($from eq 'found') ? '/ages/found?filter=pending' : '/ages?filter=pending';
+% my $track_label = ($from eq 'found') ? 'Found' : 'All';
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="mb-0">
     Age Review — VAERS #<%= $rec->{vaers_id} %>
     <small class="text-muted ms-2">Year: <%= $archive->{file_year} // '?' %></small>
+    <span class="badge bg-secondary ms-2" style="font-size:.65rem;vertical-align:middle"><%= $track_label %></span>
   </h4>
   <div>
     <span class="badge bg-primary"><%= $stats->{reviewed} %> / <%= $stats->{total} %> (<%= $stats->{pct} %>%)</span>
-    <a href="/ages?filter=pending" class="btn btn-sm btn-outline-secondary ms-2">Back to list</a>
+    <a href="<%= $back_url %>" class="btn btn-sm btn-outline-secondary ms-2">Back to list</a>
   </div>
 </div>
 
@@ -868,6 +1101,7 @@ __DATA__
       <h6 class="mb-3">Your Review</h6>
       <form method="POST" action="/ages/review/<%= $rec->{vaers_id} %>" id="reviewForm">
         <input type="hidden" name="next_unreviewed" value="<%= $next_unreviewed // '' %>">
+        <input type="hidden" name="from" value="<%= $from %>">
 
         <div class="mb-3">
           <label class="form-label fw-bold">Decision</label>
@@ -916,7 +1150,7 @@ __DATA__
             Save & next <kbd>Enter</kbd>
           </button>
           % if ($next_unreviewed) {
-            <a href="/ages/review/<%= $next_unreviewed %>" class="btn btn-outline-secondary btn-sm">
+            <a href="/ages/review/<%= $next_unreviewed %>?from=<%= $from %>" class="btn btn-outline-secondary btn-sm">
               Skip to next →
             </a>
           % }
