@@ -83,6 +83,7 @@ sub load_ages_csv {
     my $fi = 0;
     for my $rec (@ages) {
         next unless ($rec->{status} // '') eq 'ok';
+        next if !defined $rec->{age} || $rec->{age} eq '' || $rec->{age} eq 'null';
         push @ages_found, $rec;
         $ages_found_idx{ $rec->{vaers_id} } = $fi;
         $fi++;
